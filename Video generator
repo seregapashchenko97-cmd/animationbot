@@ -1,0 +1,410 @@
+import asyncio
+import aiohttp
+import os
+import logging
+import tempfile
+import time
+import random
+import urllib.parse
+from pathlib import Path
+
+logger = logging.getLogger(__name__)
+
+OUTPUT_DIR = "/tmp/videos"
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+POLLINATIONS_BASE = "https://image.pollinations.ai/prompt"
+
+# Dark animated illustration style prefix — consistent across all images
+STYLE_PREFIX = (
+    "dark animated illustration, cinematic, moody atmospheric lighting, "
+    "desaturated colors with warm lamp glow, graphic novel style, "
+    "16:9 aspect ratio, no text, no watermark, "
+    "introspective emotional scene, "
+)
+
+NEGATIVE_STYLE = "realistic photo, 3D render, bright colors, happy, cheerful, text, watermark, logo"
+
+
+class VideoGenerator:
+    def __init__(self):
+        self.session = None
+
+    async def _get_session(self):
+        if self.session is None or self.session.closed:
+            self.session = aiohttp.ClientSession(
+                timeout=aiohttp.ClientTimeout(total=60)
+            )
+        return self.session
+
+    async def generate_image(self, prompt: str, index: int, temp_dir: str) -> str:
+        """Generate image using Pollinations.ai free API"""
+        full_prompt = STYLE_PREFIX + prompt
+        encoded_prompt = urllib.parse.quote(full_prompt)
+
+        # Pollinations.ai free API - no key needed
+        # Add seed for variety but consistent style
+        seed = random.randint(1, 999999)
+        url = (
+            f"{POLLINATIONS_BASE}/{encoded_prompt}"
+            f"?width=1920&height=1080&seed={seed}&nologo=true&enhance=true"
+        )
+
+        img_path = os.path.join(temp_dir, f"frame_{index:04d}.jpg")
+
+        session = await self._get_session()
+
+        for attempt in range(3):
+            try:
+                async with session.get(url) as response:
+                    if response.status == 200:
+                        content = await response.read()
+                        if len(content) > 1000:  # Valid image
+                            with open(img_path, 'wb') as f:
+                                f.write(content)
+                            return img_path
+                    logger.warning(f"Image {index} attempt {attempt+1}: status {response.status}")
+            except Exception as e:
+                logger.warning(f"Image {index} attempt {attempt+1} error: {e}")
+
+            await asyncio.sleep(3 * (attempt + 1))
+
+        # Fallback: generate black frame
+        logger.error(f"Failed to generate image {index}, using fallback")
+        return await self._create_fallback_image(index, temp_dir, prompt)
+
+    async def _create_fallback_image(self, index: int, temp_dir: str, prompt: str) -> str:
+        """Create a dark fallback image with text using FFmpeg"""
+        img_path = os.path.join(temp_dir, f"frame_{index:04d}.jpg")
+        short_text = prompt[:50].replace("'", "").replace('"', '').replace(':', ' ')
+
+        cmd = [
+            'ffmpeg', '-y',
+            '-f', 'lavfi',
+            '-i', f'color=c=0x1a1a1a:size=1920x1080:rate=1',
+            '-vframes', '1',
+            '-vf', f"drawtext=fontsize=36:fontcolor=gray:x=(w-text_w)/2:y=(h-text_h)/2:text='{short_text}'",
+            img_path
+        ]
+
+        proc = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=asyncio.subprocess.DEVNULL,
+            stderr=asyncio.subprocess.DEVNULL
+        )
+        await proc.wait()
+        return img_path
+
+    async def generate_voiceover(self, text: str, temp_dir: str) -> str:
+        """Generate voiceover using Edge-TTS (Microsoft free TTS)"""
+        audio_path = os.path.join(temp_dir, "voiceover.mp3")
+
+        try:
+            import edge_tts
+
+            # Professional American male voice - deep, storytelling
+            voice = "en-US-ChristopherNeural"
+
+            communicate = edge_tts.Communicate(
+                text,
+                voice=voice,
+                rate="-8%",      # Slightly slower for dramatic effect
+                volume="+0%",
+                pitch="-5Hz"     # Slightly deeper
+            )
+
+            await communicate.save(audio_path)
+            logger.info(f"Voiceover generated: {audio_path}")
+            return audio_path
+
+        except ImportError:
+            logger.error("edge-tts not installed")
+            raise
+        except Exception as e:
+            logger.error(f"TTS error: {e}", exc_info=True)
+            raise
+
+    async def create_video(self, topic_data: dict, bot=None, user_id=None) -> tuple:
+        """Main video creation pipeline"""
+        temp_dir = tempfile.mkdtemp(dir=OUTPUT_DIR)
+        scenes = topic_data["scenes"]
+        total = len(scenes)
+
+        logger.info(f"Starting video: {topic_data['title_en']} | {total} scenes")
+
+        # Progress updates
+        async def progress(msg):
+            if bot and user_id:
+                try:
+                    await bot.send_message(chat_id=user_id, text=msg, parse_mode="Markdown")
+                except:
+                    pass
+
+        # Step 1: Generate all images with concurrency control
+        await progress(f"🎨 *Step 2/4:* Generating {total} images...\n_(~{total // 4} minutes)_")
+
+        semaphore = asyncio.Semaphore(4)  # Max 4 concurrent requests to Pollinations
+
+        async def gen_with_semaphore(scene, idx):
+            async with semaphore:
+                img = await self.generate_image(scene["prompt"], idx, temp_dir)
+                if idx % 20 == 0 and idx > 0:
+                    await progress(f"🖼 Generated {idx}/{total} images...")
+                # Small delay to be nice to free API
+                await asyncio.sleep(0.5)
+                return img
+
+        tasks = [gen_with_semaphore(scene, i) for i, scene in enumerate(scenes)]
+        image_paths = await asyncio.gather(*tasks)
+
+        await progress("✅ All images generated!\n🔊 *Step 3/4:* Generating voiceover...")
+
+        # Step 2: Generate voiceover
+        voiceover_path = await self.generate_voiceover(topic_data["voiceover"], temp_dir)
+
+        await progress("✅ Voiceover done!\n🎬 *Step 4/4:* Assembling video with FFmpeg...")
+
+        # Step 3: Assemble video
+        video_path = await self.assemble_video(
+            scenes, image_paths, voiceover_path, temp_dir, topic_data["title_en"]
+        )
+
+        return video_path, topic_data["voiceover"]
+
+    async def assemble_video(
+        self,
+        scenes: list,
+        image_paths: list,
+        voiceover_path: str,
+        temp_dir: str,
+        title: str
+    ) -> str:
+        """Assemble final video with FFmpeg"""
+
+        # Step 1: Create video from images with precise durations
+        concat_file = os.path.join(temp_dir, "concat.txt")
+        with open(concat_file, 'w') as f:
+            for i, (scene, img_path) in enumerate(zip(scenes, image_paths)):
+                if os.path.exists(img_path):
+                    f.write(f"file '{img_path}'\n")
+                    f.write(f"duration {scene['duration']}\n")
+                else:
+                    logger.warning(f"Missing image {i}, skipping")
+
+        silent_video = os.path.join(temp_dir, "silent.mp4")
+
+        # Create silent video from images with Ken Burns effect (subtle zoom)
+        cmd_video = [
+            'ffmpeg', '-y',
+            '-f', 'concat',
+            '-safe', '0',
+            '-i', concat_file,
+            '-vf', (
+                'scale=1920:1080:force_original_aspect_ratio=increase,'
+                'crop=1920:1080,'
+                'zoompan=z=\'if(lte(zoom,1.0),1.04,max(1.001,zoom-0.0008))\':'
+                'd=\'125\':x=\'iw/2-(iw/zoom/2)\':y=\'ih/2-(ih/zoom/2)\':'
+                's=1920x1080:fps=25'
+            ),
+            '-c:v', 'libx264',
+            '-preset', 'fast',
+            '-crf', '23',
+            '-pix_fmt', 'yuv420p',
+            '-r', '25',
+            silent_video
+        ]
+
+        logger.info("Creating video from images...")
+        proc = await asyncio.create_subprocess_exec(
+            *cmd_video,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        stdout, stderr = await proc.communicate()
+
+        if proc.returncode != 0:
+            logger.warning(f"Ken Burns failed, trying simple concat: {stderr.decode()[-500:]}")
+            # Fallback: simple concat without zoom effect
+            cmd_simple = [
+                'ffmpeg', '-y',
+                '-f', 'concat',
+                '-safe', '0',
+                '-i', concat_file,
+                '-vf', 'scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080',
+                '-c:v', 'libx264',
+                '-preset', 'fast',
+                '-crf', '23',
+                '-pix_fmt', 'yuv420p',
+                '-r', '25',
+                silent_video
+            ]
+            proc = await asyncio.create_subprocess_exec(
+                *cmd_simple,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            stdout, stderr = await proc.communicate()
+            if proc.returncode != 0:
+                raise RuntimeError(f"FFmpeg video creation failed: {stderr.decode()[-1000:]}")
+
+        # Step 2: Mix voiceover with video
+        # Get video duration
+        duration_cmd = [
+            'ffprobe', '-v', 'quiet',
+            '-print_format', 'json',
+            '-show_format',
+            silent_video
+        ]
+        proc = await asyncio.create_subprocess_exec(
+            *duration_cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        stdout, _ = await proc.communicate()
+
+        import json
+        try:
+            info = json.loads(stdout.decode())
+            video_duration = float(info['format']['duration'])
+        except:
+            video_duration = sum(s['duration'] for s in scenes)
+
+        # Get audio duration
+        audio_cmd = [
+            'ffprobe', '-v', 'quiet',
+            '-print_format', 'json',
+            '-show_format',
+            voiceover_path
+        ]
+        proc = await asyncio.create_subprocess_exec(
+            *audio_cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        stdout, _ = await proc.communicate()
+
+        try:
+            audio_info = json.loads(stdout.decode())
+            audio_duration = float(audio_info['format']['duration'])
+        except:
+            audio_duration = video_duration
+
+        logger.info(f"Video: {video_duration:.1f}s | Audio: {audio_duration:.1f}s")
+
+        # Final video with audio
+        output_path = os.path.join(OUTPUT_DIR, f"video_{int(time.time())}.mp4")
+
+        # Strategy: loop video if audio is longer, or truncate audio if video is longer
+        if audio_duration > video_duration * 1.5:
+            # Audio is much longer: loop video
+            cmd_final = [
+                'ffmpeg', '-y',
+                '-stream_loop', '-1',
+                '-i', silent_video,
+                '-i', voiceover_path,
+                '-c:v', 'libx264',
+                '-preset', 'fast',
+                '-crf', '23',
+                '-c:a', 'aac',
+                '-b:a', '128k',
+                '-shortest',
+                '-movflags', '+faststart',
+                output_path
+            ]
+        else:
+            # Normal: merge as-is
+            cmd_final = [
+                'ffmpeg', '-y',
+                '-i', silent_video,
+                '-i', voiceover_path,
+                '-c:v', 'copy',
+                '-c:a', 'aac',
+                '-b:a', '128k',
+                '-shortest',
+                '-movflags', '+faststart',
+                output_path
+            ]
+
+        logger.info("Merging audio and video...")
+        proc = await asyncio.create_subprocess_exec(
+            *cmd_final,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        stdout, stderr = await proc.communicate()
+
+        if proc.returncode != 0:
+            raise RuntimeError(f"FFmpeg final merge failed: {stderr.decode()[-1000:]}")
+
+        # Add background music (optional ambient dark music)
+        final_path = await self._add_ambient_audio(output_path, temp_dir)
+
+        logger.info(f"Video complete: {final_path}")
+        return final_path
+
+    async def _add_ambient_audio(self, video_path: str, temp_dir: str) -> str:
+        """Add subtle ambient dark music under voiceover"""
+        # Generate ambient tone using FFmpeg (free, no files needed)
+        ambient_path = os.path.join(temp_dir, "ambient.mp3")
+
+        # Create a subtle drone/ambient sound with ffmpeg sine waves
+        # Dark ambient: layered low sine waves
+        cmd_ambient = [
+            'ffmpeg', '-y',
+            '-f', 'lavfi',
+            '-i', (
+                'aevalsrc='
+                '0.06*sin(55*2*PI*t)+0.04*sin(110*2*PI*t)+'
+                '0.03*sin(82*2*PI*t)+0.02*sin(165*2*PI*t):'
+                'sample_rate=44100:channel_layout=stereo'
+            ),
+            '-t', '700',  # 11+ minutes
+            '-af', 'afade=t=in:st=0:d=5,afade=t=out:st=690:d=10,lowpass=f=400',
+            ambient_path
+        ]
+
+        proc = await asyncio.create_subprocess_exec(
+            *cmd_ambient,
+            stdout=asyncio.subprocess.DEVNULL,
+            stderr=asyncio.subprocess.DEVNULL
+        )
+        await proc.wait()
+
+        if not os.path.exists(ambient_path):
+            return video_path  # Skip if ambient gen failed
+
+        # Mix ambient under voiceover at low volume
+        final_with_music = video_path.replace('.mp4', '_final.mp4')
+
+        cmd_mix = [
+            'ffmpeg', '-y',
+            '-i', video_path,
+            '-i', ambient_path,
+            '-filter_complex',
+            '[0:a]volume=1.0[voice];[1:a]volume=0.12[music];[voice][music]amix=inputs=2:duration=shortest[aout]',
+            '-map', '0:v',
+            '-map', '[aout]',
+            '-c:v', 'copy',
+            '-c:a', 'aac',
+            '-b:a', '128k',
+            '-shortest',
+            '-movflags', '+faststart',
+            final_with_music
+        ]
+
+        proc = await asyncio.create_subprocess_exec(
+            *cmd_mix,
+            stdout=asyncio.subprocess.DEVNULL,
+            stderr=asyncio.subprocess.DEVNULL
+        )
+        await proc.wait()
+
+        if proc.returncode == 0 and os.path.exists(final_with_music):
+            os.remove(video_path)
+            return final_with_music
+
+        return video_path
+
+    async def close(self):
+        if self.session and not self.session.closed:
+            await self.session.close()
