@@ -1,0 +1,771 @@
+import random
+from datetime import datetime
+
+
+TOPICS = [
+    {
+        "title_en": "Your Life If You Never Worked a Single Day",
+        "title_ru": "Ваша жизнь, если бы вы ни дня не работали",
+        "hook": "What if you woke up tomorrow and realized you never had to work again?",
+        "theme": "no_work",
+        "style_keywords": "dark room, empty apartment, lonely person, city lights, animated illustration",
+    },
+    {
+        "title_en": "What Happens to Your Body After 10 Years Without Money",
+        "title_ru": "Что происходит с телом, когда ты 10 лет без денег",
+        "hook": "Ten years of financial stress leaves marks you can actually see.",
+        "theme": "poverty_body",
+        "style_keywords": "stressed person, broken mirror, dark bathroom, aging face, animated",
+    },
+    {
+        "title_en": "The Last 24 Hours Before Going Completely Broke",
+        "title_ru": "Последние 24 часа перед тем, как окончательно разориться",
+        "hook": "There's a moment — a specific hour — when everything changes forever.",
+        "theme": "going_broke",
+        "style_keywords": "empty wallet, dark kitchen, phone bills, lonely night, animated illustration",
+    },
+    {
+        "title_en": "What It Feels Like to Have Zero Dollars in Your Bank Account",
+        "title_ru": "Каково это — иметь на банковском счете 0 долларов",
+        "hook": "Zero. Not low. Not negative. Zero. And somehow that's the scariest number.",
+        "theme": "zero_dollars",
+        "style_keywords": "phone screen showing zero balance, dark bedroom, rain window, animated",
+    },
+    {
+        "title_en": "How Rich People Spend Monday vs How You Spend Monday",
+        "title_ru": "Как богатые люди проводят понедельник, и как вы проводите понедельник",
+        "hook": "Same 24 hours. Completely different worlds.",
+        "theme": "rich_vs_poor",
+        "style_keywords": "split screen, luxury vs poverty, morning routine, animated dark style",
+    },
+    {
+        "title_en": "The Psychological Damage of Being Poor Nobody Talks About",
+        "title_ru": "О психологическом вреде бедности никто не говорит",
+        "hook": "Poverty doesn't just empty your wallet. It rewires your brain.",
+        "theme": "poverty_psychology",
+        "style_keywords": "anxious person, dark thoughts, stressed mind, animated illustration",
+    },
+    {
+        "title_en": "What Your Life Looks Like at 30 With No Savings",
+        "title_ru": "Как выглядит ваша жизнь в 30 лет без сбережений",
+        "hook": "You hit 30. You look around. And the math doesn't work anymore.",
+        "theme": "no_savings_30",
+        "style_keywords": "person sitting alone at 30, small apartment, night city, animated dark",
+    },
+    {
+        "title_en": "The Moment You Realize You Are Trapped by Your Salary",
+        "title_ru": "Момент, когда ты понимаешь, что попал в ловушку зарплаты",
+        "hook": "It's not a job anymore. It's a cage with a salary attached.",
+        "theme": "salary_trap",
+        "style_keywords": "office cage, trapped worker, dark cubicle, animated illustration",
+    },
+    {
+        "title_en": "Why Poor People Stay Poor Even When They Work Hard",
+        "title_ru": "Почему бедные остаются бедными даже когда много работают",
+        "hook": "Hard work is necessary. But it was never sufficient.",
+        "theme": "poverty_cycle",
+        "style_keywords": "tired worker, endless cycle, dark factory, animated dark style",
+    },
+    {
+        "title_en": "What Debt Does to Your Mind Over Time",
+        "title_ru": "Что долги делают с твоим разумом со временем",
+        "hook": "You stop dreaming about the future. You start dreaming about the debt.",
+        "theme": "debt_mind",
+        "style_keywords": "debt papers, dark anxiety, sleepless person, animated illustration",
+    },
+    {
+        "title_en": "The Hidden Cost of Being Broke That Nobody Counts",
+        "title_ru": "Скрытая цена бедности, которую никто не считает",
+        "hook": "Being poor is expensive. Insanely, invisibly expensive.",
+        "theme": "hidden_cost",
+        "style_keywords": "counting coins, broken appliances, dark kitchen, animated",
+    },
+    {
+        "title_en": "Life at Minimum Wage: Hour by Hour",
+        "title_ru": "Жизнь на минимальную зарплату: час за часом",
+        "hook": "Let's walk through one full day. One full honest day.",
+        "theme": "minimum_wage",
+        "style_keywords": "clock, tired worker, small meal, dark apartment, animated illustration",
+    },
+]
+
+SCENE_TEMPLATES = {
+    "no_work": [
+        ("A young man stares at the ceiling of his dark empty bedroom at 3am, phone on chest, animated illustration style, dark moody lighting, no color saturation", 3),
+        ("Empty coffee cup on a window sill, rain outside, city lights blurred, dark atmospheric animation style", 2),
+        ("Person scrolling social media alone in a dim room, blue screen light on face, animated dark style", 3),
+        ("Messy apartment with takeout boxes, person sitting on floor, dark animated illustration", 3),
+        ("Clock showing 2pm on a Tuesday, person still in pajamas, empty apartment, dark style", 2),
+        ("Person watching others leave for work from apartment window, animated melancholic style", 3),
+        ("Bank account notification on phone screen showing low balance, dark bedroom background", 2),
+        ("Person cooking instant noodles alone at night, small kitchen, animated dark illustration", 3),
+        ("Pile of unopened mail on table, overdue bills visible, dark atmospheric style", 2),
+        ("Person lying on bed staring at ceiling, city sounds outside, animated dark style", 3),
+        ("Empty fridge open at midnight, person standing in dark kitchen, animated illustration", 2),
+        ("Person writing in a notebook alone by lamp light, dark room, melancholic animated style", 3),
+        ("Street outside at dawn, person watching from window, hasn't slept, dark animation", 2),
+        ("Mirror reflection of tired person in dark bathroom, animated illustration style", 3),
+        ("Person on phone, nobody answering, dark quiet apartment, animated dark style", 2),
+        ("Stack of books untouched, dusty shelf, dark room, animated illustration", 2),
+        ("Person eating alone at small table, one plate, one chair, dark style", 3),
+        ("Empty wallet on table, keys beside it, dark atmospheric animation", 2),
+        ("Person watching clock on wall, minutes passing, doing nothing, dark style", 3),
+        ("Sunrise through dirty window, person hasn't moved all night, dark animated illustration", 3),
+        ("Person finally sleeping at 6am when others wake up, quiet apartment, dark style", 2),
+        ("Phone notification: job rejection email, dark screen glow, animated", 2),
+        ("Person in shower, just standing, water running, dark animated illustration", 2),
+        ("Empty gym bag by the door, never used, dark apartment corner", 2),
+        ("Person looking at old photos on phone, remembering better times, dark style", 3),
+        ("Night city from rooftop, person small against big world, animated dark", 3),
+        ("Person putting coins in jar, saving slowly, dark kitchen table, animated", 2),
+        ("Apartment door with three locks, isolation symbolized, dark illustration style", 2),
+        ("Person finally leaving apartment after three days, bright outside hurts eyes, animated", 3),
+        ("Return to dark apartment, door closing, silence, animated dark illustration final scene", 3),
+    ],
+    "poverty_body": [
+        ("Young person examining face in cracked bathroom mirror, stress lines visible, dark animated illustration", 3),
+        ("Person unable to sleep, lying in bed watching ceiling, 4am, animated dark style", 3),
+        ("Cheap fast food meal on small table, person eating alone, dark atmospheric animation", 2),
+        ("Person walking long distance to work in rain, no car, animated dark illustration", 3),
+        ("Worn out shoes on cold pavement, close up, dark animated style", 2),
+        ("Person skipping dentist appointment, tooth pain, dark bathroom, animated", 2),
+        ("Stress eating at midnight, dark kitchen, animated illustration style", 3),
+        ("Person in crowded bus looking exhausted, dark morning commute animation", 3),
+        ("Headache from stress, person holding head at desk, dark office lighting", 2),
+        ("Hair thinning, person noticing in mirror, dark bathroom, animated style", 2),
+        ("Person too tired to exercise, collapsed on couch after work, animated dark", 3),
+        ("Cheap vitamins vs prescription medicine, can only afford one, dark table", 2),
+        ("Person aged visibly, comparing old photos to mirror, dark animated illustration", 3),
+        ("Skipping meals to save money, empty plate, dark kitchen, animated", 2),
+        ("Back pain from cheap mattress, person stretching, dark bedroom, animated", 2),
+        ("Eyes red from poor sleep, blue screen at night, dark bedroom animated", 3),
+        ("Person counting pills, rationing medication, dark table, animated illustration", 2),
+        ("Stress rash on arm, person looking at it, dark bathroom lighting", 2),
+        ("Weight gain from cheap processed food, person avoiding mirror, dark animation", 3),
+        ("Person sweating in summer without AC, fan barely working, dark apartment", 3),
+        ("Anxiety attack alone, floor of apartment, 3am, dark animated illustration", 3),
+        ("Person calling in sick because of stress not sickness, dark morning animation", 2),
+        ("Worn out winter coat, person shivering at bus stop, dark animation", 3),
+        ("Body language of defeated person on subway, hunched shoulders, dark style", 2),
+        ("Person declining social invitation because of money, dark room, animated", 3),
+        ("Teeth yellowing from no dental care, person avoiding smiling, dark animation", 2),
+        ("Ten year comparison: same person, different weight, different posture, dark style", 3),
+        ("Person finally seeing doctor after years of avoiding, dark waiting room", 3),
+        ("Doctor's face with concerned expression, bad news coming, dark animation", 2),
+        ("Person alone at night processing the news, window rain, dark animated final", 3),
+    ],
+    "going_broke": [
+        ("Person checking bank account at midnight, phone glow in dark room, animated illustration", 3),
+        ("Final paycheck notification, smaller than expected, dark atmospheric animation", 2),
+        ("Person looking at rent notice on door, eviction warning, dark hallway animated", 3),
+        ("Credit card declined at grocery store, people behind in line, dark animation", 3),
+        ("Person selling possessions on app, photographing items in dark apartment", 2),
+        ("Empty moving boxes starting to stack up, dark apartment, animated style", 2),
+        ("Last nice meal out, person knowing it might be their last, dark restaurant", 3),
+        ("Phone call from bank, person not answering, dark room, animated", 2),
+        ("Person giving away furniture to friends, dark empty apartment", 3),
+        ("Jar of coins being counted, not enough, dark kitchen table animated", 2),
+        ("Person canceling subscriptions one by one, phone in dark room", 2),
+        ("Looking at old bank statement vs current one, dark desk lamp, animated", 3),
+        ("Car being repossessed at night, person watching from window, animated dark", 3),
+        ("Person eating rice and eggs for the fifth day straight, dark kitchen", 2),
+        ("Lights being turned off to save electricity, dark apartment by choice", 2),
+        ("Person asking family for help, shameful phone call, dark room animated", 3),
+        ("Borrowing money from friend, awkward cafe meeting, dark animation style", 3),
+        ("Bill pile growing taller on table, person avoiding looking at it", 2),
+        ("Person walking to work because no bus fare, dawn streets, animated dark", 3),
+        ("Second job interview, desperation visible, dark hallway animation", 3),
+        ("Signing papers for loan, dark bank office, animated illustration", 2),
+        ("Person not sleeping thinking about money, 3am ceiling stare, animated", 3),
+        ("Empty living room after selling TV, person sitting on floor", 2),
+        ("Friend invites to dinner, person making excuse, dark phone screen", 2),
+        ("Person calculating on paper, numbers don't add up, dark table, animated", 3),
+        ("Moving boxes being loaded, leaving apartment for the last time, animated", 3),
+        ("New much smaller room, sitting on edge of bed, dark animation style", 3),
+        ("Moment of realizing this is the bottom, dark room, quiet, animated", 3),
+        ("Person slowly starting over, one small step, dark dawn animation", 2),
+        ("Early morning, new beginning, dark to light transition, animated final scene", 3),
+    ],
+    "zero_dollars": [
+        ("Phone showing bank balance of exactly $0.00, dark bedroom background, animated", 3),
+        ("Person staring at screen, frozen, dark room, animated illustration", 3),
+        ("Flashback to when account had money, brighter colors, then back to dark", 3),
+        ("Person opening fridge, almost empty, dark kitchen, animated style", 2),
+        ("Counting last dollar bills on dark table, animated illustration", 2),
+        ("Zero dollars but still have WiFi, irony, dark room, animated", 2),
+        ("Friends texting to go out, person looking at zero balance, dark room", 3),
+        ("Person researching how to make money fast at 2am, dark screen glow", 3),
+        ("Selling something online for $20, dark apartment, animated", 2),
+        ("Small meal from last groceries, creative cooking, dark kitchen animation", 3),
+        ("Person walking instead of taking Uber, long street, dark animated style", 3),
+        ("Skipping lunch at work, watching others eat, dark cafeteria corner", 2),
+        ("Call from mom asking how you are, lying on the phone, dark room", 3),
+        ("Zero balance but still buying coffee, small rebellion, dark cafe corner", 2),
+        ("Person checking if direct deposit hit at midnight, dark room animated", 3),
+        ("Asking for paycheck advance, awkward office moment, dark animation", 2),
+        ("Person feeling shame at checkout line, counting coins, dark animated", 3),
+        ("Looking at wishlist of things never to be bought, dark screen glow", 2),
+        ("Person hiding zero balance from partner, dark living room animated", 3),
+        ("Making a list of needs vs wants, painful editing, dark table lamp", 2),
+        ("Zero dollars but full of ideas on what to do different next time", 3),
+        ("Finding $5 in old jacket, relief, dark hallway animated illustration", 2),
+        ("Person deciding to finally change something, dark room, determination", 3),
+        ("Setting first budget ever, dark table, small lamp, animated style", 2),
+        ("Small win: $50 extra from side gig, dark room glow, animated", 3),
+        ("Person slowly rebuilding, step by step, dark to slightly lighter tone", 3),
+        ("Same phone, different number on screen now, not zero, dark bedroom", 2),
+        ("Remembering the zero, keeping it as reminder, dark desk, animated", 2),
+        ("Person sharing story with friend, dark cafe, animated illustration style", 3),
+        ("Final scene: zero taught more than comfort ever could, dark room, lamp, animated", 3),
+    ],
+    "rich_vs_poor": [
+        ("Split screen: rich person waking up to sunrise penthouse vs poor person to alarm dark room, animated", 3),
+        ("Rich: personal trainer at 6am gym. Poor: skipping breakfast, dark apartment morning, animated", 3),
+        ("Rich: fresh juice and eggs. Poor: instant coffee and nothing, dark kitchen, animated", 2),
+        ("Rich: luxury car commute with music. Poor: crowded bus in rain, animated dark style", 3),
+        ("Rich: corner office with view. Poor: cubicle with broken chair, dark workplace", 3),
+        ("Rich: catered lunch meeting. Poor: eating packed leftovers alone, dark break room", 2),
+        ("Rich: afternoon gym break. Poor: answering emails through lunch, dark desk", 3),
+        ("Rich: investment portfolio review with advisor. Poor: checking bank app alone, dark", 3),
+        ("Rich: leaving work at 4pm. Poor: still there at 8pm, dark office building", 2),
+        ("Rich: dinner reservation at nice restaurant. Poor: cooking tired at 9pm, dark kitchen", 3),
+        ("Rich: kids homework help with tutor. Poor: helping kids while exhausted, dark table", 3),
+        ("Rich: wine and book on terrace. Poor: TV and phone on small couch, dark room", 2),
+        ("Rich: planning vacation on laptop. Poor: calculating if rent is covered, dark screen", 3),
+        ("Rich: calls friends spontaneously. Poor: thinks twice about every plan, dark phone", 2),
+        ("Rich: weekend trip announcement. Poor: overtime this weekend announcement, dark room", 3),
+        ("Rich: Monday morning attitude vs poor: Monday morning dread, split screen dark", 3),
+        ("Same 24 hours, text overlay on split screen, dark animation style", 2),
+        ("Rich: stress about growth. Poor: stress about survival, visible difference, animated", 3),
+        ("Rich: networking event with champagne. Poor: night shift starting, dark animation", 3),
+        ("Rich: healthy meal prep Sunday. Poor: figuring out what to eat from what's left", 3),
+        ("Rich: therapist appointment. Poor: can't afford therapy, dark living room alone", 3),
+        ("Rich: personal doctor checkup. Poor: avoiding hospital because of cost, dark", 2),
+        ("Rich: investing $1000. Poor: hoping paycheck clears in time, dark bank app", 3),
+        ("Rich: passive income notifications while sleeping. Poor: alarm for second job", 3),
+        ("Rich: choosing which luxury to buy. Poor: choosing which necessity to skip", 2),
+        ("Rich: talking about future plans. Poor: just surviving the week, dark animated", 3),
+        ("Rich: philanthropy discussion. Poor: needing the charity, dark irony animated", 2),
+        ("Zoom out: same city, same day, completely different worlds, dark animation", 3),
+        ("Both types looking at the moon, only thing that's equal, dark night sky", 3),
+        ("Final: what separates them isn't talent, animated dark contemplative scene", 3),
+    ],
+    "poverty_psychology": [
+        ("Person unable to concentrate on task, money thoughts interrupting, dark desk animation", 3),
+        ("Brain scan concept: poverty taking up mental bandwidth, dark illustration", 3),
+        ("Person saying yes to things they can't afford because of shame, dark cafe", 3),
+        ("Constant background anxiety, person trying to appear normal, dark room animated", 3),
+        ("Sleep disruption due to financial worry, 3am bed, dark animation illustration", 3),
+        ("Person avoiding friends who have more money, social withdrawal, dark room", 2),
+        ("Hyper-vigilance about prices in every situation, dark store aisle animated", 2),
+        ("Decision fatigue from constant trade-offs, person exhausted, dark kitchen", 3),
+        ("Shame spiral after small purchase, person regretting, dark animated style", 3),
+        ("Person working harder than rich peers but getting further behind, dark irony", 3),
+        ("Scarcity mindset making bad long-term decisions, dark table calculation", 3),
+        ("Person unable to imagine different future, poverty limiting imagination, dark", 3),
+        ("Stress hormones concept: chronic poverty elevates cortisol, dark illustration", 2),
+        ("Person snapping at loved one due to financial stress, dark living room", 3),
+        ("Avoiding mail, phone, notifications because they bring bad news, dark room", 2),
+        ("Person feeling unworthy of good things even when available, dark therapy visual", 3),
+        ("Children absorbing parents' financial anxiety, dark living room animated", 3),
+        ("Identity tied to income, losing sense of self without money, dark mirror", 3),
+        ("Person lying awake running numbers that never add up, dark bedroom", 3),
+        ("Learned helplessness after repeated financial failures, dark room sitting", 3),
+        ("Person unable to enjoy present because of future fear, dark park bench", 2),
+        ("Comparison to others causing constant pain, phone scrolling dark room", 3),
+        ("Poverty making people more susceptible to addiction, dark street animated", 2),
+        ("Person missing out on opportunities because of cost, dark crossroads visual", 3),
+        ("Mental health deteriorating silently, nobody to tell, dark apartment", 3),
+        ("Breaking the cycle requires more than just money, dark insight moment", 3),
+        ("Person starting to understand the pattern, small light of awareness, dark", 3),
+        ("Talking to someone about it for the first time, dark cafe animated", 2),
+        ("The weight lifting slightly with understanding, dark to lighter animation", 3),
+        ("Final: knowing the psychology is the first step out, dark room, small lamp", 3),
+    ],
+    "no_savings_30": [
+        ("Person blowing out 30 candles alone in dark apartment, animated illustration", 3),
+        ("Calculator on table: 30 years old, zero savings shown, dark kitchen", 3),
+        ("Old dreams vs current reality, vision board from 20s, dark bedroom", 3),
+        ("Friends buying houses while person still renting small apartment, dark phone", 3),
+        ("30 year old person looking at parents' house they grew up in, animated dark", 2),
+        ("Social media full of peers' milestones, person scrolling alone, dark room", 3),
+        ("Person calculating: if I save $100 a month now, how long to retirement, dark", 3),
+        ("Compound interest concept: starting at 22 vs 32, dark educational visual", 3),
+        ("Person having frank conversation with self in mirror, dark bathroom", 3),
+        ("No emergency fund when car breaks down, crisis moment, dark animated", 3),
+        ("Person asking parent for help at 30, hardest conversation, dark phone call", 3),
+        ("Job that pays just enough to survive but not save, dark office leaving", 2),
+        ("30 year old flatmates, some planned it, some didn't, dark hallway", 2),
+        ("Medical bill arriving with no savings to cover it, dark table animated", 3),
+        ("Person realizing they're one crisis from disaster, dark moment of clarity", 3),
+        ("Lifestyle inflation ate every raise ever received, dark reflection", 3),
+        ("30 but spending like 22 still, dark animated honest scene", 2),
+        ("Person making first real budget at 30, dark desk lamp, animated", 3),
+        ("Cutting first subscription, small step, dark room animated", 2),
+        ("Learning about investing for the first time at 30, dark phone screen glow", 3),
+        ("Person starting small savings, $50 first time, dark bank app animated", 2),
+        ("Telling a friend the honest situation for first time, dark cafe", 3),
+        ("Night of reckoning: all finances laid out on dark table, animated", 3),
+        ("Creating different habit, morning instead of night, dark dawn light", 2),
+        ("One year later, small progress, dark room, slightly more warmth", 3),
+        ("30 was not too late, just the actual starting point, dark to lighter", 3),
+        ("Person investing first $500, nervous but doing it, dark room animated", 2),
+        ("Looking back at 30 as turning point from age 35, dark reflection", 3),
+        ("Debt gone, first milestone, person exhaling, dark room, lamp warm glow", 3),
+        ("Final: 30 with no savings is the beginning of understanding, dark animated", 3),
+    ],
+    "salary_trap": [
+        ("Person walking into office building, doors closing behind, animated dark", 3),
+        ("Salary deposit, immediately paying bills, nothing left, dark phone screen", 3),
+        ("Person calculating: minus rent, minus food, minus bills, minus zero, dark table", 3),
+        ("Lifestyle creeping up with every raise, never actually ahead, dark concept", 3),
+        ("Person unable to quit bad job because of bills, trapped visualization, dark", 3),
+        ("Golden handcuffs concept: good salary but completely trapped, dark office", 3),
+        ("Person daydreaming about quitting, reality pulling back, dark cubicle", 3),
+        ("Health insurance tied to job, can't leave because of it, dark reality", 2),
+        ("Person's creative dreams dying slowly in cubicle, dark animated", 3),
+        ("30 year mortgage: trapped for three decades, dark calculation scene", 3),
+        ("Person working 50 hours for same lifestyle as 40 hours last year, dark", 3),
+        ("Two-income household still not getting ahead, dark kitchen conversation", 3),
+        ("Person turning down lower-paid dream job because of mortgage, dark moment", 3),
+        ("Counting days to weekend, then to paycheck, then back to Monday, dark loop", 3),
+        ("Manager knows you can't leave, treats you accordingly, dark office", 2),
+        ("Person's identity becoming their job title, dark identity loss animated", 3),
+        ("Skills going stale while staying comfortable, dark desk animated", 2),
+        ("Person getting sick because they can't afford to take time off, dark", 3),
+        ("Vacation days unused because work never stops, dark calendar animated", 2),
+        ("Person missing family event for work meeting, dark phone call animated", 3),
+        ("Salary increase of 3% vs inflation of 8%, dark math on wall, animated", 3),
+        ("Person realizing they've traded life for stability, dark window stare", 3),
+        ("First honest conversation with partner about feeling trapped, dark room", 3),
+        ("Person starting side project at midnight, exhausted but hopeful, dark desk", 3),
+        ("Small win from side project, different kind of satisfaction, dark glow", 2),
+        ("Building exit plan slowly while staying in job, dark strategic scene", 3),
+        ("Person negotiating raise using competition as leverage, dark confidence", 2),
+        ("Saying no to extra work for first time, dark moment of self-respect", 2),
+        ("Setting timeline to leave, creating real plan, dark table lamp animated", 3),
+        ("Final: the trap only works if you believe you can't leave, dark scene", 3),
+    ],
+    "poverty_cycle": [
+        ("Child in lower income home doing homework, future potential visible, dark animated", 3),
+        ("Same child growing up, working from teenage years to help family, dark", 3),
+        ("Missing school for work, falling behind academically, dark classroom empty", 3),
+        ("Not affording college, taking job instead, dark crossroads animated", 3),
+        ("Low-wage job with no benefits, first adult job, dark workplace animation", 3),
+        ("Working hard but wages not growing, dark frustrated scene animated", 3),
+        ("Unexpected expense destroying small savings, dark kitchen crisis animated", 3),
+        ("Payday loan trap: borrowing to repay borrowing, dark cycle visualization", 3),
+        ("Person working multiple jobs, exhausted, no time to improve, dark animated", 3),
+        ("No time or money for education to break out, dark evening home animated", 3),
+        ("Health declining from overwork, dark body under stress animated illustration", 3),
+        ("Same person, their child now starting the same path, dark generational cycle", 3),
+        ("Statistical concept: zip code predicts income, dark map visualization", 2),
+        ("Hard worker who never gets ahead, frustration visible, dark workplace", 3),
+        ("Person hearing 'just work harder' from someone born with advantages, dark irony", 3),
+        ("Network being key: poor person with no network, dark social isolation", 3),
+        ("Rich kid failing upward, poor kid succeeding still stuck, dark contrast", 3),
+        ("Person applying to 50 jobs, one callback, dark rejection pile animated", 3),
+        ("Unpaid internships only accessible to those with money to support themselves", 3),
+        ("Person burning out at 35, the cost of working twice as hard for half result", 3),
+        ("Moment of questioning the entire system, dark contemplative night animated", 3),
+        ("Finding one mentor, small crack in the cycle, dark hopeful scene", 3),
+        ("Community helping each other, small light in darkness, dark animated", 2),
+        ("Person making one strategic decision that changes trajectory, dark animated", 3),
+        ("Talking to child about money differently than parents did, dark kitchen", 3),
+        ("Breaking one small part of the cycle, significant symbolically, dark scene", 3),
+        ("Person teaching someone else what they learned, dark community space", 2),
+        ("The cycle can be broken but takes more than willpower, dark insight", 3),
+        ("New generation with slightly different tools, dark but hopeful animated", 3),
+        ("Final: cycles break one decision at a time, dark room, single lamp glow", 3),
+    ],
+    "debt_mind": [
+        ("Credit card statement arriving, person dreading opening it, dark table", 3),
+        ("Total debt number appearing, person's face going pale, dark animated", 3),
+        ("Debt growing faster than payments, dark graph visual animated", 3),
+        ("Person calculating: minimum payments only covering interest, dark math", 3),
+        ("Debt keeping person awake at 2am, running numbers, dark bedroom", 3),
+        ("Person hiding debt from partner, secret account tab open, dark desk", 3),
+        ("Debt preventing person from taking any risk in life, dark paralysis scene", 3),
+        ("Dream job offer turned down because debt needs stable income, dark moment", 3),
+        ("Person not telling friends real financial situation, dark social scene", 2),
+        ("Refinancing debt to pay debt, cycle visible, dark bank meeting animated", 3),
+        ("Debt collection call at work, person stepping outside, dark hallway", 3),
+        ("Person calculating years until debt free, too many years, dark despair", 3),
+        ("Impulse purchase to feel better, making debt worse, dark cycle animated", 3),
+        ("Debt changing personality: more anxious, less present, dark animated", 3),
+        ("Partner finds out about hidden debt, dark confrontation animated", 3),
+        ("Debt causing arguments about small purchases, dark kitchen conversation", 2),
+        ("Person researching bankruptcy at midnight, dark screen glow animated", 3),
+        ("Pride preventing person from asking for help, dark isolated room", 2),
+        ("Snowball vs avalanche method: person finally learning strategy, dark desk", 3),
+        ("First extra payment beyond minimum, small victory, dark animated", 2),
+        ("Person starting debt tracker, owning the numbers, dark table lamp", 3),
+        ("Canceling everything non-essential, going minimal, dark room animated", 2),
+        ("Side hustle to attack debt, midnight work, exhausted but focused, dark", 3),
+        ("Debt number going down for first time, person noticing, dark phone screen", 3),
+        ("Telling partner the full truth, relief after hiding it, dark room animated", 3),
+        ("First account paid off, surprisingly emotional moment, dark room", 3),
+        ("Person who was trapped by debt becoming free slowly, dark to lighter", 3),
+        ("Swearing never to use credit for lifestyle again, dark promise to self", 2),
+        ("Debt free day imagined, what it would feel like, dark dream sequence", 3),
+        ("Final: debt owns your mind until you decide to own it, dark animated", 3),
+    ],
+    "hidden_cost": [
+        ("Person paying more for same product because can only buy small sizes, dark store", 3),
+        ("Payday loan fees adding up, expensive way to survive short-term, dark animated", 3),
+        ("No car means paying more for everything, delivery fees, dark phone screen", 3),
+        ("Can't buy in bulk without cash upfront, paying more per unit, dark store", 2),
+        ("Old appliances breaking more often, poor people pay more to maintain less, dark", 3),
+        ("No preventive healthcare means expensive emergency care later, dark hospital", 3),
+        ("Renting vs owning: building no equity, paying forever, dark calculation", 3),
+        ("Phone plan: poor credit means more expensive prepaid, dark store animated", 2),
+        ("Banking fees: minimum balance charges for those who can't maintain it, dark", 3),
+        ("Bad credit = higher interest on everything, dark percentage visualization", 3),
+        ("Cheap shoes wearing out twice as fast: buying two pairs costs more, dark", 2),
+        ("Time cost: long bus commute vs short car commute, dark transit animated", 3),
+        ("Eating cheap food that causes expensive health problems later, dark kitchen", 3),
+        ("Poor neighborhoods have fewer stores: paying more for less choice, dark map", 2),
+        ("Security deposits, first and last month: high entry cost to renting, dark", 3),
+        ("Check cashing fees instead of free bank deposit, dark poverty tax animated", 2),
+        ("No credit history means no access to low-interest anything, dark bank", 3),
+        ("Person paying price for having been poor years ago still, dark credit report", 3),
+        ("Energy costs higher in poor housing: bad insulation, dark apartment cold", 2),
+        ("Having to buy cheap that breaks vs quality once, false economy, dark store", 3),
+        ("Childcare costs preventing career advancement, dark working parent animated", 3),
+        ("Transportation to cheaper store costs more than savings, dark calculation", 2),
+        ("Library book fine unpaid: cut off from free resource, dark small irony", 2),
+        ("Insurance lapse = higher rates forever after, dark penalty animated", 3),
+        ("Person counting all the hidden costs, dark table of numbers animated", 3),
+        ("Realization: being poor costs $5000 more per year than being comfortable", 3),
+        ("System designed with comfortable people in mind, not poor ones, dark insight", 3),
+        ("One windfall could break the cycle: the cruelty of almost, dark animated", 3),
+        ("Person finding creative ways to dodge the hidden costs, dark smart scene", 3),
+        ("Final: the hidden costs are the most honest picture of poverty, dark lamp", 3),
+    ],
+    "minimum_wage": [
+        ("4:45am alarm in dark bedroom, minimum wage worker waking, animated illustration", 3),
+        ("Quick cheap breakfast, if any, dark kitchen 5am animated", 2),
+        ("Long bus ride at 6am, dark morning commute animated illustration", 3),
+        ("Arriving early because being late costs too much, dark workplace", 2),
+        ("First hour: physical work, body already tired, dark workplace animated", 3),
+        ("Break room: packing lunch because $15 lunch is one hour of work, dark", 3),
+        ("Manager speaking to minimum wage worker like they're disposable, dark scene", 3),
+        ("Calculating hours vs rent during slow moment, dark mental math animated", 3),
+        ("Lunch: homemade sandwich, eaten quickly, dark break room animated", 2),
+        ("Afternoon slump with no coffee money, pushing through, dark animated", 3),
+        ("Coworker calling in sick, now covering their shift, dark extra hours", 3),
+        ("Clock watching, every minute visible, dark workplace end of day animated", 2),
+        ("End of 8 hours, too tired for anything else, dark after work animated", 3),
+        ("Grocery shopping with strict budget, calculator on phone, dark store", 3),
+        ("Choosing between produce and cheap filling food, dark sad choice animated", 2),
+        ("Evening: too tired to cook properly, dark kitchen animated illustration", 3),
+        ("Bill paying ritual: what can wait, what absolutely can't, dark table lamp", 3),
+        ("Checking schedule for next week: no guaranteed hours, dark anxiety", 3),
+        ("One hour of TV, too tired to do anything productive, dark couch animated", 2),
+        ("Bed at 9pm to survive the next day, dark bedroom, phone charging animated", 3),
+        ("Weekly calculation: worked 40 hours, can't afford one car repair, dark", 3),
+        ("Person doing the math: at this rate, it will never be different, dark", 3),
+        ("Saturday overtime: tired but needs the money, dark workplace animated", 3),
+        ("Someone else getting promoted who started later, dark workplace corner", 2),
+        ("Person researching skills to change situation, midnight laptop, dark room", 3),
+        ("Application for better job, hope mixed with fear, dark desk animated", 3),
+        ("No response from better job, back to minimum wage reality, dark phone", 2),
+        ("Person finding one thing that makes the week better, dark small joy", 3),
+        ("Planning one year ahead: different picture possible, dark night animated", 3),
+        ("Final: every minimum wage worker is surviving a system, not failing in it", 3),
+    ],
+}
+
+VOICEOVER_TEMPLATES = {
+    "no_work": """Chapter One. The Morning That Never Starts.
+
+When most people wake up, there's a reason to move. An alarm. A meeting. Someone expecting them somewhere.
+
+But what if there was nothing? What if every morning was a blank page, and not the exciting kind?
+
+This is the story of a life built without work. And it's not the dream most people imagine.
+
+{scene_narrations}
+
+Chapter Final. What We Learn From Stillness.
+
+A life without work isn't freedom. It's a different kind of prison. One with no bars you can point to, and no warden you can blame.
+
+The body needs purpose. The mind needs challenge. The self needs contribution.
+
+This isn't about money. It's about meaning. And meaning, it turns out, doesn't arrive on its own.""",
+
+    "poverty_body": """Chapter One. The Body Keeps Score.
+
+Doctors have a saying: the body keeps score. Every stress response. Every sleepless night. Every skipped meal. Every moment of cortisol flooding your system because you can't pay next month's rent.
+
+Poverty doesn't just empty your bank account. It writes itself into your cells.
+
+{scene_narrations}
+
+Chapter Final. The Bill Comes Due.
+
+Ten years of financial stress doesn't stay in your mind. It moves into your muscles, your gut, your immune system.
+
+The poor pay twice. Once with their money, and once with their health.
+
+Understanding this isn't giving up. It's finally seeing the full picture.""",
+
+    "going_broke": """Chapter One. Twenty-Three Hours Before Zero.
+
+There's a moment most people never think about. The last normal hour before everything changes.
+
+You don't know it's the last one. That's the thing. You're just living it.
+
+{scene_narrations}
+
+Chapter Final. The Morning After.
+
+Broke isn't an ending. It just feels that way from the inside.
+
+Every person who has rebuilt something started from a moment exactly like this one. Scared. Embarrassed. But still here.
+
+Still here is everything.""",
+
+    "zero_dollars": """Chapter One. The Number.
+
+Zero.
+
+Not overdrawn. Not negative. Just zero. A perfectly round nothing.
+
+It should feel neutral. It doesn't.
+
+{scene_narrations}
+
+Chapter Final. What Zero Teaches.
+
+Zero is the clearest teacher money ever provides.
+
+It shows you what you truly need. Who actually shows up. What you were spending on that you didn't even notice.
+
+Zero is not the end. Zero is the honest beginning.""",
+
+    "rich_vs_poor": """Chapter One. Same City. Same Day. Different Planet.
+
+It's Monday morning. Somewhere in this city, someone is waking up to the sound of waves from a machine they bought to help them sleep better.
+
+Somewhere else in the same city, someone's alarm is going off at five AM and they're already calculating how much they can spend on breakfast.
+
+Same city. Same sky. Completely different lives.
+
+{scene_narrations}
+
+Chapter Final. The Uncomfortable Truth.
+
+The gap between these two Mondays isn't talent. It's not effort. It's not even luck, entirely.
+
+It's compounding. It's systems. It's who your parents knew and where you were born.
+
+Knowing this doesn't fix it. But it changes how you fight for something different.""",
+
+    "poverty_psychology": """Chapter One. What Nobody Sees.
+
+When researchers gave people in poverty cognitive tests, they found something unexpected.
+
+On the days they had financial worries on their mind, their scores dropped significantly. The mental load of being poor consumed bandwidth needed for everything else.
+
+This is what nobody talks about.
+
+{scene_narrations}
+
+Chapter Final. The First Step Out.
+
+You cannot outwork a psychology shaped by scarcity. Not with willpower alone.
+
+Understanding the patterns is not making excuses. It is the prerequisite to changing them.
+
+The cage was real. But understanding it is what opens the door.""",
+
+    "no_savings_30": """Chapter One. The Birthday Nobody Warns You About.
+
+Thirty sounds like an age. It is also a deadline nobody mentioned.
+
+Not because everything is over. But because compound interest is real, and the math of waiting becomes brutal at exactly this point.
+
+{scene_narrations}
+
+Chapter Final. Thirty Is Not Too Late.
+
+The person who starts saving at thirty will have less than the one who started at twenty-two.
+
+That is true. It is also irrelevant.
+
+Because the choice isn't between starting at twenty-two and starting at thirty. The real choice is between starting at thirty and waiting until forty.
+
+Start now. The only thing thirty teaches you is that waiting is the only real mistake.""",
+}
+
+DEFAULT_VOICEOVER = """Chapter One. The Beginning.
+
+There are stories that don't get told. Not because they aren't important. Because they're too close to home for most people to want to hear.
+
+This is one of those stories.
+
+{scene_narrations}
+
+Chapter Final. What This Changes.
+
+Understanding is not the same as accepting. Seeing clearly is not the same as giving up.
+
+The first step to changing anything is being willing to look directly at it.
+
+This is that look."""
+
+DESCRIPTION_TEMPLATES = {
+    "en": [
+        "What does it actually feel like? This video goes through it hour by hour, scene by scene. No sugarcoating.",
+        "Nobody makes videos about this. So we did. Watch to the end — the last part hits different.",
+        "The full picture, honestly. If you've ever been here, you'll recognize every frame.",
+        "This isn't motivation. This is documentation. Watch it and decide what to do with it.",
+        "Every frame of this video is a story someone is living right now. Maybe someone you know.",
+    ]
+}
+
+
+def generate_scene_narrations(theme: str, num_scenes: int) -> str:
+    narrations = {
+        "no_work": [
+            "Day one feels like vacation. Day seven starts to feel like something else.",
+            "You find yourself checking the time constantly. Not because you have somewhere to be. Because you don't.",
+            "Friends stop inviting you places. Not out of cruelty. They just assume you're busy with your freedom.",
+            "The mornings are the hardest. There's nothing pulling you upright.",
+            "You start to understand why people complain about jobs they'd miss if they lost them.",
+            "Purpose, it turns out, is not something you find lying around.",
+            "The apartment gets smaller every week.",
+            "You start talking to yourself. Then you start answering.",
+            "The money runs out before the meaninglessness does.",
+            "Working wasn't the prison. This is the prison.",
+        ],
+        "poverty_body": [
+            "The first thing stress takes is your sleep. The second is your appetite.",
+            "Cortisol doesn't care about your budget. It just rises.",
+            "Cheap food is designed to fill you, not nourish you. Your body knows the difference.",
+            "The body calculates every unpaid bill in inflammation.",
+            "Years of fight-or-flight with nowhere to run.",
+            "Healthcare delayed becomes healthcare denied.",
+            "The weight of money problems is not metaphorical.",
+            "Anxiety doesn't clock out at five PM.",
+        ],
+        "going_broke": [
+            "The first thing that goes is the thing you thought was essential.",
+            "Humility arrives on a specific Tuesday, at a specific checkout line.",
+            "You start to understand your parents in a new and terrible way.",
+            "Every letter in the mailbox is a potential catastrophe.",
+            "The things you were embarrassed to want become the things you'd do anything for.",
+            "Broke reorders your values whether you want it to or not.",
+            "The people who show up are rarely the ones you expected.",
+        ],
+        "zero_dollars": [
+            "Zero means the system shows you who you actually are to it.",
+            "Every notification feels like a threat.",
+            "Zero is where you find out if your friendships were about who you were or what you had.",
+            "The silence of a zero balance is very loud.",
+            "You start calculating everything in hours of work.",
+            "Zero makes you a better listener. Everything has a cost now.",
+        ],
+        "rich_vs_poor": [
+            "Rich people's stress is about optimization. Poor people's stress is about survival.",
+            "One group makes decisions. The other reacts to consequences.",
+            "The rich invest in problems so their money can solve them. The poor trade time for money that disappears.",
+            "Weekends mean different things depending on which world you're in.",
+            "One world plans in decades. The other plans in days.",
+        ],
+        "poverty_psychology": [
+            "Scarcity creates tunnel vision. This is not a moral failure. It is a cognitive response.",
+            "Every decision made under financial pressure uses the same bandwidth as thinking under threat.",
+            "The poor are not worse at decisions. They make decisions in worse conditions.",
+            "Chronic stress rewires the brain's relationship to risk.",
+            "Shame is a luxury tax that poverty adds to every transaction.",
+            "The future becomes harder to imagine the more the present demands.",
+        ],
+        "no_savings_30": [
+            "At twenty, retirement felt theoretical. At thirty, it feels late.",
+            "Every raise you ever got left the same way it came.",
+            "The math is simple and merciless: time is the variable that can't be recovered.",
+            "Your parents didn't teach you this. Their parents didn't teach them.",
+            "The first budget you make at thirty is the most important document of your financial life.",
+            "Starting late is not the same as not starting.",
+        ],
+    }
+
+    default_narrations = [
+        "Some stories need to be told plainly.",
+        "There is no dramatic music that makes this easier.",
+        "This is what it actually looks like.",
+        "Most people never say this out loud.",
+        "The numbers don't lie even when everything else does.",
+        "Somewhere, someone is living exactly this frame.",
+    ]
+
+    pool = narrations.get(theme, default_narrations)
+    random.shuffle(pool)
+
+    selected = []
+    for i in range(min(num_scenes // 5, len(pool))):
+        selected.append(f"\nChapter {i + 2}. {pool[i % len(pool)]}\n")
+
+    return "\n".join(selected)
+
+
+class TopicGenerator:
+    def __init__(self):
+        self.used_topics = []
+
+    def generate_topic(self) -> dict:
+        available = [t for t in TOPICS if t["title_en"] not in self.used_topics]
+        if not available:
+            self.used_topics = []
+            available = TOPICS
+
+        topic = random.choice(available)
+        self.used_topics.append(topic["title_en"])
+
+        theme = topic["theme"]
+        scenes = SCENE_TEMPLATES.get(theme, SCENE_TEMPLATES["no_work"])
+
+        random.shuffle(scenes)
+
+        # Target ~10 min video: 30 scenes averaging 3 sec = 90 sec; we want ~150 scenes total for 10 min
+        # Actually: 30 scenes * avg 3sec = 90sec. For 10 min we need ~150 scenes of avg 4 sec
+        # Use all available scenes and repeat if needed
+        target_scenes = 120
+        extended_scenes = []
+        while len(extended_scenes) < target_scenes:
+            extended_scenes.extend(scenes)
+        extended_scenes = extended_scenes[:target_scenes]
+
+        # Vary durations: 1-5 seconds
+        scenes_with_duration = []
+        for prompt, base_dur in extended_scenes:
+            dur = random.randint(max(1, base_dur - 1), min(5, base_dur + 1))
+            scenes_with_duration.append({"prompt": prompt, "duration": dur})
+
+        num_scenes = len(scenes_with_duration)
+        scene_narrations = generate_scene_narrations(theme, num_scenes)
+
+        voiceover_template = VOICEOVER_TEMPLATES.get(theme, DEFAULT_VOICEOVER)
+        voiceover_text = voiceover_template.format(scene_narrations=scene_narrations)
+
+        description_en = random.choice(DESCRIPTION_TEMPLATES["en"])
+
+        tags = "#Money #Poverty #Psychology #Life #Finance #Truth #Wealth #Income #SelfImprovement #RealTalk"
+
+        return {
+            "title_en": topic["title_en"],
+            "title_ru": topic["title_ru"],
+            "theme": theme,
+            "style_keywords": topic["style_keywords"],
+            "scenes": scenes_with_duration,
+            "voiceover": voiceover_text,
+            "description_en": description_en,
+            "description_ru": f"Это правдивая история. Без приукрашиваний. Досмотрите до конца — финал важен.",
+            "tags": tags,
+        }
+
+    def get_sample_topics(self) -> list:
+        return TOPICS
